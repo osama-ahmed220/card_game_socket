@@ -10,13 +10,32 @@ import { createSchema } from './utils/createSchema';
 require('dotenv').config();
 
 const main = async () => {
-  const { TYPEORM_URL, TYPEORM_SYNCHRONIZE, TYPEORM_LOGGING } = process.env;
-  if (TYPEORM_URL && TYPEORM_SYNCHRONIZE && TYPEORM_LOGGING) {
+  const {
+    TYPEORM_HOST,
+    TYPEORM_PORT,
+    TYPEORM_USERNAME,
+    TYPEORM_PASSWORD,
+    TYPEORM_DATABASE,
+    TYPEORM_SYNCHRONIZE,
+    TYPEORM_LOGGING,
+  } = process.env;
+  if (
+    TYPEORM_HOST &&
+    TYPEORM_PORT &&
+    TYPEORM_USERNAME &&
+    TYPEORM_PASSWORD &&
+    TYPEORM_PASSWORD &&
+    TYPEORM_DATABASE &&
+    TYPEORM_SYNCHRONIZE &&
+    TYPEORM_LOGGING
+  ) {
     const connectionOptions: ConnectionOptions = {
-      type: 'mongodb',
-      url: TYPEORM_URL,
-      useUnifiedTopology: true,
-      useNewUrlParser: true,
+      type: 'mysql',
+      host: TYPEORM_HOST,
+      port: parseInt(TYPEORM_PORT),
+      username: TYPEORM_USERNAME,
+      password: TYPEORM_PASSWORD,
+      database: TYPEORM_DATABASE,
       synchronize: JSON.parse(TYPEORM_SYNCHRONIZE),
       logging: JSON.parse(TYPEORM_LOGGING),
       entities: ['./src/entity/*.ts', './entity/*.js'],
