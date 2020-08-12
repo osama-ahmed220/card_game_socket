@@ -1,8 +1,11 @@
-import { Column, Entity, Index } from "typeorm";
+import { Column, Entity, Index, PrimaryGeneratedColumn } from "typeorm";
 
 @Index("p_idd", ["playerId"], {})
 @Entity("tbl_login_history", { schema: "khawajat_db" })
 export class TblLoginHistory {
+  @PrimaryGeneratedColumn({ type: "int", name: "login_history_id" })
+  loginHistoryID: number;
+
   @Column("int", { name: "player_id" })
   playerId: number;
 

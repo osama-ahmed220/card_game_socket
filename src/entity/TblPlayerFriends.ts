@@ -1,7 +1,10 @@
-import { Column, Entity } from "typeorm";
+import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
 
 @Entity("tbl_player_friends", { schema: "khawajat_db" })
 export class TblPlayerFriends {
+  @PrimaryGeneratedColumn({ type: "int", name: "player_friends_id" })
+  playerFreidnsID: number;
+
   @Column("int", { name: "player_id", nullable: true })
   playerId: number | null;
 

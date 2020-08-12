@@ -23,8 +23,6 @@ const main = async () => {
     TYPEORM_HOST &&
     TYPEORM_PORT &&
     TYPEORM_USERNAME &&
-    TYPEORM_PASSWORD &&
-    TYPEORM_PASSWORD &&
     TYPEORM_DATABASE &&
     TYPEORM_SYNCHRONIZE &&
     TYPEORM_LOGGING
@@ -34,17 +32,22 @@ const main = async () => {
       host: TYPEORM_HOST,
       port: parseInt(TYPEORM_PORT),
       username: TYPEORM_USERNAME,
-      password: TYPEORM_PASSWORD,
+      password: TYPEORM_PASSWORD || '',
       database: TYPEORM_DATABASE,
       synchronize: JSON.parse(TYPEORM_SYNCHRONIZE),
       logging: JSON.parse(TYPEORM_LOGGING),
       entities: ['./src/entity/*.ts', './entity/*.js'],
     };
     try {
-      await createConnection(connectionOptions);
+      await createConnection({
+        name: 'default',
+        ...connectionOptions,
+      });
+      console.log(123);
     } catch (e) {
       console.log('db error', e);
     }
+    console.log(123);
   }
   // const apolloServerOptions: Config = {
   //   schema: await createSchema(),
@@ -77,6 +80,7 @@ const main = async () => {
   // });
   const server = http.createServer(app);
   const io = socketIO(server);
+  console.log(321);
   new StartIO(io);
   server.listen(port, () => {
     console.log(`server is running on post ${port}`);

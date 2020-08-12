@@ -1,4 +1,4 @@
-import { Column, Entity, Index, JoinColumn, ManyToOne } from "typeorm";
+import { Column, Entity, Index, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 import { TblGames } from "./TblGames";
 import { TblPlayer } from "./TblPlayer";
 
@@ -6,6 +6,9 @@ import { TblPlayer } from "./TblPlayer";
 @Index("gidd", ["gameId"], {})
 @Entity("tbl_game_play_two", { schema: "khawajat_db" })
 export class TblGamePlayTwo {
+  @PrimaryGeneratedColumn({ type: "int", name: "game_play_two_id" })
+  gamePlayTwoID: number;
+
   @Column("int", { name: "game_play_sequence" })
   gamePlaySequence: number;
 

@@ -1,9 +1,12 @@
-import { Column, Entity, Index, JoinColumn, ManyToOne } from "typeorm";
+import { Column, Entity, Index, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 import { TblPlayer } from "./TblPlayer";
 
 @Index("playerIddd", ["playerId"], {})
 @Entity("tbl_device_details", { schema: "khawajat_db" })
 export class TblDeviceDetails {
+  @PrimaryGeneratedColumn({ type: "int", name: "device_details_id" })
+  deviceDetailsID: number;
+
   @Column("varchar", { name: "device_id", length: 255 })
   deviceId: string;
 
