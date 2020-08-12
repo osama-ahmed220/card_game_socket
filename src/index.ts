@@ -4,7 +4,9 @@ import Express from 'express';
 import http from 'http';
 import * as path from 'path';
 import 'reflect-metadata';
+import socketIO from 'socket.io';
 import { ConnectionOptions, createConnection } from 'typeorm';
+import StartIO from './services/StartIO';
 require('dotenv').config();
 
 const main = async () => {
@@ -74,6 +76,8 @@ const main = async () => {
   //   cors: false,
   // });
   const server = http.createServer(app);
+  const io = socketIO(server);
+  new StartIO(io);
   server.listen(port, () => {
     console.log(`server is running on post ${port}`);
   });
