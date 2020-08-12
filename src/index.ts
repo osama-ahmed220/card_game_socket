@@ -43,11 +43,9 @@ const main = async () => {
         name: 'default',
         ...connectionOptions,
       });
-      console.log(123);
     } catch (e) {
       console.log('db error', e);
     }
-    console.log(123);
   }
   // const apolloServerOptions: Config = {
   //   schema: await createSchema(),
@@ -80,7 +78,6 @@ const main = async () => {
   // });
   const server = http.createServer(app);
   const io = socketIO(server);
-  console.log(321);
   new StartIO(io);
   server.listen(port, () => {
     console.log(`server is running on post ${port}`);

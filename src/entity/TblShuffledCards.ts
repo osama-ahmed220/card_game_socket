@@ -3,8 +3,8 @@ import { Column, Entity, Index, PrimaryGeneratedColumn } from "typeorm";
 @Index("FK_game_id", ["gameId"], {})
 @Entity("tbl_shuffled_cards", { schema: "khawajat_db" })
 export class TblShuffledCards {
-  @PrimaryGeneratedColumn({ type: "int", name: "suffled_cards_id" })
-  suffledCardsID: number;
+  @PrimaryGeneratedColumn({ type: "int", name: "shuffled_cards_id" })
+  shuffledCardsID: number;
   
   @Column("int", { name: "game_id" })
   gameId: number;

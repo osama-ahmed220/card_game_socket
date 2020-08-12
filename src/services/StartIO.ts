@@ -1,6 +1,8 @@
 import { Server } from "socket.io";
+import { getRepository } from "typeorm";
 import { TblCards } from "../entity/TblCards";
 import SaveDetailsInterface from "../interfaces/SaveDetailsInterface";
+import SuffleInterface from "../interfaces/SuffleInterface";
 import BaseIO from "./BaseIO";
 import Clients from "./Clients";
 import Watchers from "./Watchers";
@@ -13,15 +15,12 @@ export default class StartIO extends BaseIO {
   constructor(io: Server) {
     super(io);
     this.onConnection();
-    this.getCards()
+    this.onEachCard();
+    this.getCards();
   }
 
   getCards = async () => {
-    //   setTimeout(async () => {
-
-    //       this.cards = await getRepository(TblCards).find();
-    //       console.log('cards', this.cards);
-    //   }, 5000);
+    this.cards = await getRepository(TblCards).find();
   };
 
   onConnection = () => {
@@ -43,17 +42,33 @@ export default class StartIO extends BaseIO {
           this.watchersInstance.addNew(game_id, this._socketInfo);
         }
         const gameWatchers = this.watchersInstance.getGameWatchers(game_id);
-        if(gameWatchers.length > 0) {
-            this._io.to(game_id).emit("watchers_list", gameWatchers);
+        if (gameWatchers.length > 0) {
+          this._io.to(game_id).emit("watchers_list", gameWatchers);
         }
+        // cards for each player
+        
       });
       this.onSuffle();
     });
   };
 
-  onSuffle = () => {
-    // this._socket.on("shuffle", (data: SuffleInterface) => {
+  onEachCard = () => {
+    this._socket.on("each_card", (data: any) => {
+      // get game id
+      // const game_id = this._socketInfo.game_id;
+      // const player_id = this._socketInfo.player_id;
+      // const card_id = data.card_id;
 
-    // });
+      // card number
+      // player id
+
+    });
+  };
+
+  onSuffle = () => {
+    this._socket.on("shuffle", (data: SuffleInterface) => {
+      console.log('shuffleData', data);
+      
+    });
   };
 }
