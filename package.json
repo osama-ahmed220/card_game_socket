@@ -37,12 +37,14 @@
     "rimraf": "^3.0.2",
     "ts-jest": "^25.4.0",
     "ts-node": "^8.9.0",
+    "typeorm-model-generator": "^0.4.2",
     "typescript": "^3.8.3"
   },
   "scripts": {
     "dev": "nodemon src/index.ts",
     "db:setup": "ts-node ./src/test-utils/setup.ts",
     "build": "rimraf ./dist && tsc && cp -r ./src/assets/ ./dist/",
-    "test": "npm run db:setup && jest --detectOpenHandles"
+    "test": "npm run db:setup && jest --detectOpenHandles",
+    "model-generator": "typeorm-model-generator -h localhost -d khawajat_db -p 3306 -u root -x \"\" -e mysql"
   }
 }
