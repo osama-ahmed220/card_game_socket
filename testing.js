@@ -1,89 +1,62 @@
-const data = require('./roundsAndSequence.json');
+// const cardsOnTable = [
+//   { player_id: 1, card_id: 2 },
+//   { player_id: 3, card_id: 6 },
+//   { player_id: 5, card_id: 12 },
+//   { player_id: 237, card_id: 13 },
+// ];
 
-const game = {};
-game.roundAndSequence = data;
+// const cards = [
+//   { cardId: 2, cardNo: 8 },
+//   { cardId: 6, cardNo: 12 },
+//   { cardId: 12, cardNo: 2 },
+//   { cardId: 13, cardNo: 10 },
+// ];
 
-const roundLegnth = game.roundAndSequence.length;
-const lastRoundIndex = roundLegnth - 1;
-if (roundLegnth <= 0) {
-  game.roundAndSequence.push([
-    [
-      {
-        card_id: 1,
-        player_id: 3,
-      },
-    ],
-  ]);
-} else {
-  if (roundLegnth < 4) {
-    const rounds = game.roundAndSequence[lastRoundIndex];
-    const sequenceLength = rounds.length;
-    const lastSequenceIndex = sequenceLength - 1;
-    if (sequenceLength <= 13) {
-      const sequence = game.roundAndSequence[lastRoundIndex][lastSequenceIndex];
-      const cardsLength = sequence.length;
-      if (cardsLength < 4) {
-        // add a card here
-        game.roundAndSequence[lastRoundIndex][lastSequenceIndex].push({
-          card_id: 23,
-          player_id: 345,
-        });
-      } else {
-        console.log(123);
-        if (sequenceLength === 13 && cardsLength === 4) {
-          // add new round
-          game.roundAndSequence.push([
-            [
-              {
-                card_id: 1,
-                player_id: 3,
-              },
-            ],
-          ]);
-        } else {
-          game.roundAndSequence[lastRoundIndex].push([
-            {
-              card_id: 1,
-              player_id: 3,
-            },
-          ]);
-        }
-      }
-    } else {
-      console.log(123);
-      // new round
-      game.roundAndSequence.push([
-        [
-          {
-            card_id: 1,
-            player_id: 3,
-          },
-        ],
-      ]);
-    }
-    // console.log('sequenceLength', sequenceLength);
-    // console.log('sequenceSelectedIndex', lastSequenceIndex);
-    // console.log('rounds', rounds);
-  } else {
-    // last round
-    // const round = this.gameBoards[generatedGameID].roundAndSequence[roundAndSequenceSelectedIndex];
-    // const roundLength = round.length;
-    // const roundCurrentIndex = roundLength - 1;
-    // if(roundLength <= 0) {
-    //   // first sequence
-    //   this.gameBoards[generatedGameID].roundAndSequence[roundAndSequenceSelectedIndex].push([
-    //     {
-    //       card_id: playedCard.cardId,
-    //       player_id: player.player_id
-    //     }
-    //   ]);
-    // } else {
-    //   if(roundLength > 12) {
-    //     // last sequence
-    //   } else {
-    //   }
-    // }
-  }
-}
+// // const max = cardsOnTable.reduce((a, b) => {
+// //   const cardA = cards.find((card) => card.cardId === a.card_id);
+// //   const cardB = cards.find((card) => card.cardId === b.card_id);
+// //   console.log('cardA', cardA);
+// //   console.log('cardB', cardB);
+// //   return Math.max(cardA.cardNo, cardB.cardNo);
+// // });
 
-console.log(game.roundAndSequence);
+// const mapped = () => {
+//   return cardsOnTable.map(
+//     ({ card_id }) => cards.find(({ cardId }) => cardId === card_id).cardNo
+//   );
+// };
+
+// const getMax = () => {
+//   console.log('mapped()', mapped());
+//   return Math.max(...mapped());
+// };
+
+// const max = cardsOnTable.find(
+//   ({ card_id }) =>
+//     cards.find(({ cardNo }) => cardNo === getMax()).cardId === card_id
+// );
+
+// console.log(max);
+
+// // const arr = [1, 2, 3];
+
+// // arr.reduce((a, b) => {
+// //   console.log(a);
+// //   console.log(b);
+// //   return Math.max(a, b);
+// // });
+
+// const arr = [1, 2, 3, 4];
+// console.log(
+//   Math.max(
+//     ...arr.map((obj) => {
+//       // return obj;
+//       return obj <= 3 ? obj : 0;
+//     })
+//   )
+// );
+
+const score = 0;
+const score2 = -10;
+
+console.log(score + score2);

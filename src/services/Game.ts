@@ -8,9 +8,9 @@ export enum GAME_TYPE {
 }
 
 export enum SHOW_CARDS_ENUM {
-  ALL,
-  ONE,
-  NONE,
+  ALL = 0,
+  ONE = 1,
+  NONE = 2,
 }
 
 interface RoundAndSequenceInterface {
@@ -19,6 +19,12 @@ interface RoundAndSequenceInterface {
 }
 
 type RoundAndSequenceType = RoundAndSequenceInterface[][][];
+
+export interface CardsOnTableI {
+  sequence_number: number;
+  player_id: number;
+  card_id: number;
+}
 
 export interface GameIterface {
   socket_id: string;
@@ -32,6 +38,9 @@ export interface GameIterface {
   players: PlayersType;
   watchers: WatchersType;
   roundAndSequence: RoundAndSequenceType;
+  player_turn: number;
+  cards_on_table: CardsOnTableI[];
+  sequence_cards: CardsOnTableI[][];
 }
 
 // const roundData = [
@@ -121,10 +130,13 @@ export default class Game implements GameIterface {
   private _game_type: GAME_TYPE = GAME_TYPE.COMPLEX;
   private _show_cards: SHOW_CARDS_ENUM = SHOW_CARDS_ENUM.NONE;
   private _sequence_number: number = 1;
-  private _round_number: number = 1;
+  private _round_number: number = 0;
   private _players: PlayersType;
   private _watchers: WatchersType;
   private _roundAndSequence: RoundAndSequenceType = [];
+  private _player_turn: number = 1;
+  private _cards_on_table: CardsOnTableI[] = [];
+  private _sequence_cards: CardsOnTableI[][] = [];
 
   get socket_id() {
     return this._socket_id;
@@ -212,6 +224,30 @@ export default class Game implements GameIterface {
 
   set roundAndSequence(roundAndSequence: RoundAndSequenceType) {
     this._roundAndSequence = roundAndSequence;
+  }
+
+  get player_turn() {
+    return this._player_turn;
+  }
+
+  set player_turn(player_turn: number) {
+    this._player_turn = player_turn;
+  }
+
+  get cards_on_table() {
+    return this._cards_on_table;
+  }
+
+  set cards_on_table(cards_on_table: CardsOnTableI[]) {
+    this._cards_on_table = cards_on_table;
+  }
+
+  get sequence_cards() {
+    return this._sequence_cards;
+  }
+
+  set sequence_cards(sequence_cards: CardsOnTableI[][]) {
+    this._sequence_cards = sequence_cards;
   }
 
   addUser(isWatcher: boolean, gameData: GameIterface, user: UserInterface) {
