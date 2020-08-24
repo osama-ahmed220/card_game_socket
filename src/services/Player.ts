@@ -7,6 +7,9 @@ export interface PlayerInterface extends UserInterface {
   total_score?: number;
   sequence_score?: number;
   is_double?: boolean;
+  doubled_card?: TblCards;
+  isTrixCompleted?: boolean;
+  isComplexCompleted?: boolean;
 }
 
 export type PlayersType = { [key: string]: PlayerInterface };
@@ -17,6 +20,9 @@ export default class Player extends User implements PlayerInterface {
   private _total_score: number = 0;
   private _sequence_score: number = 0;
   private _is_double: boolean = false;
+  private _doubled_card: TblCards;
+  private _isTrixCompleted: boolean = false;
+  private _isComplexCompleted: boolean = false;
 
   get cards() {
     return this._cards;
@@ -56,5 +62,29 @@ export default class Player extends User implements PlayerInterface {
 
   set is_double(is_double: boolean) {
     this._is_double = is_double;
+  }
+
+  get doubled_card() {
+    return this._doubled_card;
+  }
+
+  set doubled_card(doubled_card: TblCards) {
+    this._doubled_card = doubled_card;
+  }
+
+  get isTrixCompleted() {
+    return this._isTrixCompleted;
+  }
+
+  set isTrixCompleted(isTrixCompleted: boolean) {
+    this._isTrixCompleted = isTrixCompleted;
+  }
+
+  get isComplexCompleted() {
+    return this._isComplexCompleted;
+  }
+
+  set isComplexCompleted(isComplexCompleted: boolean) {
+    this._isComplexCompleted = isComplexCompleted;
   }
 }

@@ -1,4 +1,4 @@
-import { Namespace, Server, Socket } from 'socket.io';
+import { Server, Socket } from 'socket.io';
 import { getRepository } from 'typeorm';
 import { TblCards } from '../entity/TblCards';
 import {
@@ -8,7 +8,12 @@ import {
 } from '../utils/helpers';
 import BaseIO from './BaseIO';
 import Clients from './Clients';
-import Game, { CardsOnTableI, GameIterface, GAME_TYPE } from './Game';
+import Game, {
+  CardsOnTableI,
+  GameIterface,
+  GameType,
+  SHOW_CARDS_ENUM,
+} from './Game';
 import { PlayerInterface, PlayersType } from './Player';
 import Watcher from './Watcher';
 import Watchers from './Watchers';
@@ -23,7 +28,7 @@ interface SaveDetailsRequestI {
     order_number?: number;
   }[];
   watcher: boolean;
-  show_cards?: number;
+  show_cards?: SHOW_CARDS_ENUM;
 }
 
 interface GamePlayeUpdateI {
@@ -60,6 +65,13 @@ const order_number_calculation: {
     plus: 1,
     minus: 3,
   },
+};
+
+const nextTurnLogic = {
+  1: 2,
+  2: 3,
+  3: 4,
+  4: 1,
 };
 
 export default class StartIO extends BaseIO {
@@ -209,17 +221,6 @@ export default class StartIO extends BaseIO {
     return game;
   }
 
-  private _emitWatchersListToAll(to: Socket | Namespace, game: GameIterface) {
-    if (Object.keys(game.watchers).length > 0) {
-      to.emit(
-        'watchers_list',
-        Object.keys(game.watchers).map(
-          (watcherGeneratedID) => game.watchers[watcherGeneratedID]
-        )
-      );
-    }
-  }
-
   private _reOrderPlayers(players: PlayersType) {
     let order_number = 1;
     for (let i = 0; i < Object.keys(players).length; i++) {
@@ -323,15 +324,58 @@ export default class StartIO extends BaseIO {
     return playerScore;
   }
 
+  private _getPlayerByOrderNumber(
+    players: { [key: string]: PlayerInterface },
+    order_number: number = 1
+  ) {
+    for (let i = 0; i < Object.keys(players).length; i++) {
+      const player = players[Object.keys(players)[i]];
+      if (player.order_number && player.order_number === order_number) {
+        return player;
+      }
+    }
+    return null;
+  }
+
   private _manageCardsOnTable(game: GameIterface, data: GamePlayeUpdateI) {
-    if (game.cards_on_table.length === 4) {
-      const maxCardPlayed = this._getHighestPlayedCardPlayerID(
-        game.cards_on_table
-      );
-      if (maxCardPlayed) {
-        const generatedPlayerID = generatePlayerID(maxCardPlayed.player_id);
+    const generatedGameID = generateGameID(game.game_id);
+    const newCardOnTable = {
+      sequence_number: game.sequence_number,
+      player_id: data.player_id,
+      card_id: data.card_id,
+    };
+    game.cards_on_table.push(newCardOnTable);
+    this._io.to(generatedGameID).emit('new_card_on_table', newCardOnTable);
+    const currentPlayerGeneratedID = generatePlayerID(data.player_id);
+    const currentPlayer = game.players[currentPlayerGeneratedID];
+    if (currentPlayer.order_number && currentPlayer.order_number === 4) {
+      game.player_turn = this._getPlayerByOrderNumber(
+        game.players,
+        1
+      )!.player_id;
+    } else {
+      game.player_turn = this._getPlayerByOrderNumber(
+        game.players,
+        currentPlayer.order_number! + 1
+      )!.player_id;
+    }
+    // this._io.to(generatedGameID).emit('cards_on_table', game.cards_on_table);
+    if (game.game_type === 'complex') {
+      if (game.cards_on_table.length === 4) {
+        const maxCardPlayed = this._getHighestPlayedCardPlayerID(
+          game.cards_on_table
+        );
+        // if (maxCardPlayed) {
+        // next player
+        const generatedPlayerID = generatePlayerID(
+          (maxCardPlayed as CardsOnTableI).player_id
+        );
         const playerScore = this._calculateSequenceScore(game.cards_on_table);
         const player = game.players[generatedPlayerID];
+        game.player_turn = this._getPlayerByOrderNumber(
+          game.players,
+          player.order_number
+        )!.player_id;
         player.sequence_score = -15 + playerScore;
         player.total_score =
           player.total_score && player.sequence_score
@@ -340,49 +384,102 @@ export default class StartIO extends BaseIO {
         game.players[generatedPlayerID] = {
           ...player,
         };
-      }
-      // sequence completed
-      if (game.sequence_number === 13) {
-        game.sequence_number = 0;
-        game.round_number = game.round_number + 1;
-      } else {
+        this._io.to(generatedGameID).emit('player_sequence_score', {
+          player_id: player.player_id,
+          sequence_score: player.sequence_score,
+        });
+        // }
+        game.sequence_cards.push(game.cards_on_table);
+        game.cards_on_table = [];
+        // this._io.to(generatedGameID).emit(
+        //   'players_score',
+        //   Object.keys(game.players).map((key) => game.players[key])
+        // );
         game.sequence_number = game.sequence_number + 1;
+        if (game.sequence_number === 13) {
+          // round complete
+          this._io.to(generatedGameID).emit(
+            'players_score',
+            Object.keys(game.players).map((key) => ({
+              player_id: game.players[key].player_id,
+              total_score: game.players[key].total_score,
+            }))
+          );
+          const completedRoundPlayerGeneratedID = generatePlayerID(
+            game.next_round_start_with
+          );
+          const completedRoundPlayer =
+            game.players[completedRoundPlayerGeneratedID];
+          completedRoundPlayer.isComplexCompleted = true;
+          if (completedRoundPlayer.isTrixCompleted) {
+            if (completedRoundPlayer.order_number) {
+              if (completedRoundPlayer.order_number === 4) {
+                // 1
+                game.next_round_start_with = this._getPlayerByOrderNumber(
+                  game.players,
+                  1
+                )!.player_id;
+              } else {
+                game.next_round_start_with = this._getPlayerByOrderNumber(
+                  game.players,
+                  completedRoundPlayer.order_number + 1
+                )!.player_id;
+              }
+            }
+          }
+          if (!completedRoundPlayer.isComplexCompleted)
+            game.sequence_number = 0;
+          game.round_number = game.round_number + 1;
+          if (game.round_number === 8) {
+            // game completed
+          } else {
+            game = this._onShuffle(game);
+          }
+        }
       }
-      game.sequence_cards.push(game.cards_on_table);
-      game.cards_on_table = [];
-    } else {
-      game.cards_on_table.push({
-        sequence_number: game.sequence_number,
-        player_id: data.player_id,
-        card_id: data.card_id,
-      });
+      this._io.to(generatedGameID).emit('next_player_turn', game.player_turn);
+    }
+    if (game.game_type === 'trix') {
     }
     return game;
   }
 
-  private _onShuffle(data: { game_id: number }) {
-    const generatedGameID = generateGameID(data.game_id);
+  private _onShuffle(game: GameIterface) {
+    const generatedGameID = generateGameID(game.game_id);
     this.shuffle();
-    const game = this.gameBoards[generatedGameID];
     let players = this.deal(game.players);
     if (game.round_number === 0) {
       players = {
         ...this._reOrderPlayers(players),
       };
+      const firstPlayerByOrderNumber = this._getPlayerByOrderNumber(players, 1);
+      if (firstPlayerByOrderNumber) {
+        game.next_round_start_with = firstPlayerByOrderNumber.player_id;
+      }
     }
     game.players = {
       ...players,
     };
-    const playerShuffleCards: PlayerInterface[] = Object.keys(players).map(
-      (playerGeneratedID) => ({
+    this._io.to(generatedGameID).emit(
+      'shuffled',
+      Object.keys(players).map((playerGeneratedID) => ({
         player_id: players[playerGeneratedID].player_id,
-        player_name: players[playerGeneratedID].player_name,
         cards: players[playerGeneratedID].cards,
         order_number: players[playerGeneratedID].order_number,
-      })
+      }))
     );
-    this._io.to(generatedGameID).emit('shuffled', playerShuffleCards);
     return game;
+  }
+
+  private _isGameExists(game_id: number, socket?: Socket) {
+    const generatedGameID = generateGameID(game_id);
+    if (!(generatedGameID in this.gameBoards)) {
+      if (socket) {
+        socket.emit('error', 'Game does not exists.');
+      }
+      return false;
+    }
+    return this.gameBoards[generatedGameID];
   }
 
   onConnection = () => {
@@ -399,12 +496,10 @@ export default class StartIO extends BaseIO {
 
       socket.on('save_details', (data: SaveDetailsRequestI) => {
         const generatedGameID = generateGameID(data.game_id);
-        socket.join(generatedGameID);
         let game: GameIterface;
         if (data.watcher) {
           // get game
-          if (!(generatedGameID in this.gameBoards)) {
-            socket.emit('error', 'Game does not exists.');
+          if (!this._isGameExists(data.game_id, socket)) {
             return;
           }
           const generatedWatcherID = generateWatcherID(data.owner_id);
@@ -417,33 +512,34 @@ export default class StartIO extends BaseIO {
             ...game.watchers,
             [generatedWatcherID]: watcher,
           };
-          // emit whole data to this socker
-          // socket.emit('whole_state', this.gameBoards[generatedGameID]);
-          // or
         } else {
-          if (!(generatedGameID in this.gameBoards)) {
+          const isGameExists = this._isGameExists(data.game_id);
+          if (!isGameExists) {
             game = this._generateGame(data);
           } else {
-            game = this.gameBoards[generatedGameID];
+            game = isGameExists;
           }
         }
+        socket.join(generatedGameID);
 
         if (data.show_cards !== undefined) {
           game.show_cards = data.show_cards;
         }
 
-        this._emitWatchersListToAll(this._io.to(generatedGameID), game);
+        this._io.to(generatedGameID).emit(
+          'watchers_list',
+          Object.keys(game.watchers).map(
+            (watcherGeneratedID) => game.watchers[watcherGeneratedID]
+          )
+        );
 
         socket.emit('whole_state', {
+          game_id: game.game_id,
           round_number: game.round_number,
           sequence_number: game.sequence_number,
           cards_on_table: game.cards_on_table,
           players: game.players,
         });
-
-        // this._emitCardsOnTable(socket, game);
-
-        // this._emitSequenceScore(this._io.to(generatedGameID), game);
 
         this.gameBoards[generatedGameID] = {
           ...game,
@@ -451,36 +547,135 @@ export default class StartIO extends BaseIO {
       });
 
       socket.on('shuffle', (data: { game_id: number }) => {
-        const generatedGameID = generateGameID(data.game_id);
-        const game = this._onShuffle(data);
+        let game = this._isGameExists(data.game_id, socket);
+        if (!game) {
+          return;
+        }
+        const generatedGameID = generateGameID(game.game_id);
+        game = this._onShuffle(game);
         this.gameBoards[generatedGameID] = {
           ...game,
         };
       });
 
-      socket.on('game_type', (data: { game_id: number; type: GAME_TYPE }) => {
-        const generatedGameID = generateGameID(data.game_id);
-        const game = this.gameBoards[generatedGameID];
-        game.game_type =
-          data.type === GAME_TYPE.COMPLEX ? GAME_TYPE.COMPLEX : GAME_TYPE.TRIX;
-      });
+      socket.on(
+        'game_type',
+        (data: { game_id: number; game_type: GameType; player_id: number }) => {
+          let game = this._isGameExists(data.game_id, socket);
+          if (!game) {
+            return;
+          }
+          const generatedGameID = generateGameID(data.game_id);
+          const generatedPlayerID = generatePlayerID(data.player_id);
+          if (!(generatedPlayerID in game.players)) {
+            socket.emit('error', 'player does not exists');
+            return;
+          }
+          const player = game.players[generatedPlayerID];
+          if (data.game_type === 'complex' && player.isComplexCompleted) {
+            socket.emit('error', 'player already completed complex');
+            return;
+          }
+          if (data.game_type === 'trix' && player.isTrixCompleted) {
+            socket.emit('error', 'player already completed trix');
+            return;
+          }
+          game.game_type = data.game_type;
+          this._io.to(generatedGameID).emit('player_selected_game_type', {
+            player_id: player.player_id,
+            game_type: game.game_type,
+          });
+          this.gameBoards[generatedGameID] = {
+            ...game,
+          };
+        }
+      );
+
+      socket.on(
+        'is_double',
+        (data: {
+          game_id: number;
+          player_id: number;
+          is_double: boolean;
+          doubled_card_id: number;
+        }) => {
+          if (!data.is_double) {
+            return;
+          }
+          let doubledCard: TblCards | undefined;
+          if (!data.doubled_card_id) {
+            socket.emit('error', 'provide card id');
+            return;
+          } else {
+            doubledCard = this.cards.find(
+              ({ cardId }) => cardId === data.doubled_card_id
+            );
+          }
+          if (!doubledCard) {
+            socket.emit('error', 'card is missing');
+            return;
+          }
+          if (doubledCard.cardNo !== 11) {
+            if (doubledCard.cardNo !== 12) {
+              socket.emit('error', 'wrong card');
+              return;
+            } else if (doubledCard.cardType.cardTypeName !== 'H') {
+              socket.emit('error', 'wrong card');
+              return;
+            }
+          }
+          let game = this._isGameExists(data.game_id, socket);
+          if (!game) {
+            return;
+          }
+          const generatedPlayerID = generatePlayerID(data.player_id);
+          if (!(generatedPlayerID in game.players)) {
+            socket.emit('error', 'player does not exists');
+            return;
+          }
+          const player = game.players[generatedPlayerID];
+          if (!player.cards || player.cards.length < 13) {
+            socket.emit('error', 'shuffle cards is not distributed yet.');
+            return;
+          }
+          if (
+            !player.cards.find(({ cardId }) => cardId === doubledCard?.cardId)
+          ) {
+            socket.emit(
+              'error',
+              'player does not have this card in the distributed deck.'
+            );
+            return;
+          }
+          if (player.selectedGameType && player.selectedGameType === 'trix') {
+            socket.emit('error', 'player selected game is trix');
+            return;
+          }
+          if (player.isComplexCompleted && player.isComplexCompleted) {
+            socket.emit('error', 'player complex game is completed.');
+            return;
+          }
+          // complex
+          if (game.sequence_number !== 0) {
+            socket.emit('error', 'game is already in running state');
+            return;
+          }
+          player.is_double = true;
+          player.doubled_card = doubledCard;
+          game.players[generatedPlayerID] = {
+            ...player,
+          };
+          const generatedGameID = generateGameID(game.game_id);
+          this.gameBoards[generatedGameID] = {
+            ...game,
+          };
+        }
+      );
 
       socket.on('game_play_update', (data: GamePlayeUpdateI) => {
         const generatedGameID = generateGameID(data.game_id);
-        // socket.to(generatedGameID).emit('card_received', data);
         let game = this.gameBoards[generatedGameID];
-        // game = this._manageCardsOnTable(game, data);
-        if (game.sequence_number === 13) {
-          // round complete
-          // const lastRoundNumber = game.round_number;
-          game = this._manageCardsOnTable(game, data);
-          if (game.round_number < 8) {
-            // shuffle the cards the
-            game = this._onShuffle({ game_id: game.game_id });
-          }
-        } else {
-          game = this._manageCardsOnTable(game, data);
-        }
+        game = this._manageCardsOnTable(game, data);
         this.gameBoards[generatedGameID] = {
           ...game,
         };

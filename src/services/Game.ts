@@ -7,6 +7,8 @@ export enum GAME_TYPE {
   TRIX,
 }
 
+export type GameType = 'trix' | 'complex';
+
 export enum SHOW_CARDS_ENUM {
   ALL = 0,
   ONE = 1,
@@ -31,7 +33,7 @@ export interface GameIterface {
   game_id: number;
   owner_id: number;
   owner_name: string;
-  game_type: GAME_TYPE;
+  game_type: GameType;
   show_cards: SHOW_CARDS_ENUM;
   sequence_number: number;
   round_number: number;
@@ -39,6 +41,7 @@ export interface GameIterface {
   watchers: WatchersType;
   roundAndSequence: RoundAndSequenceType;
   player_turn: number;
+  next_round_start_with: number;
   cards_on_table: CardsOnTableI[];
   sequence_cards: CardsOnTableI[][];
 }
@@ -127,7 +130,7 @@ export default class Game implements GameIterface {
   private _game_id: number;
   private _owner_id: number;
   private _owner_name: string;
-  private _game_type: GAME_TYPE = GAME_TYPE.COMPLEX;
+  private _game_type: GameType;
   private _show_cards: SHOW_CARDS_ENUM = SHOW_CARDS_ENUM.NONE;
   private _sequence_number: number = 1;
   private _round_number: number = 0;
@@ -135,6 +138,7 @@ export default class Game implements GameIterface {
   private _watchers: WatchersType;
   private _roundAndSequence: RoundAndSequenceType = [];
   private _player_turn: number = 1;
+  private _next_round_start_with: number = 1;
   private _cards_on_table: CardsOnTableI[] = [];
   private _sequence_cards: CardsOnTableI[][] = [];
 
@@ -174,7 +178,7 @@ export default class Game implements GameIterface {
     return this._game_type;
   }
 
-  set game_type(game_type: GAME_TYPE) {
+  set game_type(game_type: GameType) {
     this._game_type = game_type;
   }
 
@@ -232,6 +236,14 @@ export default class Game implements GameIterface {
 
   set player_turn(player_turn: number) {
     this._player_turn = player_turn;
+  }
+
+  get next_round_start_with() {
+    return this._next_round_start_with;
+  }
+
+  set next_round_start_with(next_round_start_with: number) {
+    this._next_round_start_with = next_round_start_with;
   }
 
   get cards_on_table() {
